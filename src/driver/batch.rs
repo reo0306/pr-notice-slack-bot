@@ -28,7 +28,7 @@ impl Batch {
     }
 
     pub async fn run(&mut self) -> Result<()> {
-        let repositories = self.github_api.fetch::<Repository>(&format!("{}/user/repos?page=1", GITHUB_API_URI)).await?;
+        let repositories = self.github_api.fetch::<Repository>(&format!("{}/user/repos?page=3", GITHUB_API_URI)).await?;
 
         self.create_slack_message(repositories).await?;
 
@@ -38,6 +38,8 @@ impl Batch {
     }
 
     async fn create_slack_message(&mut self, repositories: Vec<Repository>) -> Result<()> {
+        self.message.push("*Open Pull Request*".to_string());
+
         for repo in &repositories {
             let pulls = self.github_api.fetch::<PullRequest>(&format!("{}/pulls?state=open", repo.url)).await?;
 
@@ -47,6 +49,9 @@ impl Batch {
                                             .await?;
 
                 if requested_reviewers.users.len() == 0 {
+                    let review = Vec::new();
+                    let text_line = TextLine::new(repo, &pull, requested_reviewers.clone(), review);
+                    self.message.push(text_line.message());
                     continue;
                 }
 
@@ -62,7 +67,7 @@ impl Batch {
     }
 
     async fn slack_api(&self) -> Result<()> {
-        let slack = SlackApi::construct_slack_message(self.message.clone());
+        let slack = SlackApi::construct_slack_message(&self.message);
 
         SlackApi::send_message(&slack).await?;
 

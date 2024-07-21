@@ -61,17 +61,28 @@ impl<'a> TextLine<'a> {
     pub fn unapproved_reviewers(&self) -> String {
         let mut users: Vec<String> = Vec::new();
 
-        for reviewer in &self.reviewers.users {
-            for review in &self.reviews {
-                let user = &reviewer.login;
-
-                if *user == review.user.login && review.state != "APPROVED".to_string() {
-                    users.push(user.to_string());
+        let _ = &self.reviewers.users.clone()
+            .into_iter()
+            .for_each(|reviewer| {
+                if &self.reviews.len() == &0_usize {
+                    users.push((&reviewer.login).to_string());
                 }
-            }
-        }
 
-        format!("unapproved reviewers - {}", users.join(" "))
+                let _ = &self.reviews.clone()
+                    .into_iter()
+                    .filter(|review| {
+                        &review.user.login.len() > &0_usize && &reviewer.login == &review.user.login && review.state != "APPROVED".to_string()
+                    })
+                    .for_each(|_| {
+                        users.push((&reviewer.login).to_string());
+                    });
+            });
+
+        if users.len() == 0 {
+            format!("")
+        } else {
+            format!("unapproved reviewers - {}", users.join(" "))
+        }
     }
 
     pub fn state(&self) -> String {
